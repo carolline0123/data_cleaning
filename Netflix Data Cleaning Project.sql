@@ -22,11 +22,12 @@ SELECT *
 FROM NetflixTitlesRawData;
 
 -- Standarize Date Format (Converting Text Data Type into Date)
+
 UPDATE NetflixTitles
 	SET date_added = CASE 
 		WHEN date_added LIKE '%-%-%' THEN STR_TO_DATE(date_added, '%d-%b-%y')
 		ELSE STR_TO_DATE(date_added, '%M %d, %Y')
-    END;
+    	END;
 
 ALTER TABLE NetflixTitles
 MODIFY COLUMN date_added DATE;
@@ -57,12 +58,12 @@ ORDER BY 1;
 
 SELECT 
 	COUNT(DISTINCT show_id) AS unique_ids,
-    COUNT(show_id) AS all_ids
+	COUNT(show_id) AS all_ids
 FROM NetflixTitles;
 
 SELECT
 	COUNT(DISTINCT title) AS unique_titles,
-    COUNT(title) AS all_titles
+	COUNT(title) AS all_titles
 FROM NetflixTitles;
 
 WITH NetflixDuplicateCTE AS (
@@ -100,8 +101,7 @@ SELECT * FROM NetflixTitlesUpdated;
 
 INSERT INTO NetflixTitlesUpdated
 SELECT *,
-	ROW_NUMBER() OVER(
-		PARTITION BY date_added, `type`, title, release_year, duration) AS row_num
+	ROW_NUMBER() OVER(PARTITION BY date_added, `type`, title, release_year, duration) AS row_num
 FROM NetflixTitles;
 
 DELETE
@@ -121,10 +121,10 @@ FROM NetflixTitlesUpdated;
 
 SELECT 
 	n1.director, 
-    n1.cast, 
-    n2.director, 
-    n2.cast, 
-    ROW_NUMBER() OVER(PARTITION BY n1.director, n1.cast, n2.director, n2.cast) AS row_num_2
+	n1.cast, 
+	n2.director, 
+	n2.cast, 
+	ROW_NUMBER() OVER(PARTITION BY n1.director, n1.cast, n2.director, n2.cast) AS row_num_2
 FROM NetflixTitlesUpdated n1
 JOIN NetflixTitlesUpdated n2
 	ON n1.cast = n2.cast
@@ -135,7 +135,7 @@ WITH NetflixTemp AS (
 	SELECT 
 		n2.director, 
 		n2.cast, 
-        ROW_NUMBER() OVER(PARTITION BY n2.director, n2.cast) AS row_num_2
+        	ROW_NUMBER() OVER(PARTITION BY n2.director, n2.cast) AS row_num_2
 	FROM NetflixTitlesUpdated n1
 	JOIN NetflixTitlesUpdated n2
 		ON n1.cast = n2.cast
@@ -154,14 +154,14 @@ UPDATE NetflixTitlesUpdated
 SET director = 'Rajiv Chilaka'
 WHERE `cast` = 'Vatsal Dubey, Julie Tejwani, Rupa Bhimani, Jigna Bhardwaj, Rajesh Kava, Mousam, Swapnil' AND director IS NULL;
 
--- Breaking out Duration to duration_show_seasons for TV Shows and duration_movie_mins Column for Movies, and Converting it to INT for Further Analysis
+-- Breaking out duration column to duration_show_seasons for TV Shows and duration_movie_mins Column for Movies, and converting it to INT for further analysis
 
 SELECT 
 	duration,
 	CASE
 		WHEN type = 'Movie' THEN SUBSTRING_INDEX(duration, ' ', 1)
 		ELSE SUBSTRING_INDEX(duration, ' ', 1) 
-    END
+    	END
 FROM NetflixTitlesUpdated;
 
 CREATE TABLE `netflixtitlesupdated_2` (
@@ -190,20 +190,20 @@ SELECT *,
 	CASE
 		WHEN type = 'Movie' THEN SUBSTRING_INDEX(duration, ' ', 1)
 		ELSE NULL
-    END AS duration_movie_mins,
-    CASE 
+	END AS duration_movie_mins,
+	CASE 
 		WHEN type = 'TV Show' THEN SUBSTRING_INDEX(duration, ' ', 1)
 		ELSE NULL
-    END AS duration_show_seasons
+	END AS duration_show_seasons
 FROM NetflixTitlesUpdated;
 
 SELECT * FROM netflixtitlesupdated_2;
 
 SELECT 
 	title, 
-    duration, 
-    release_year, 
-    duration_show_seasons
+	duration, 
+	release_year, 
+	duration_show_seasons
 FROM netflixtitlesupdated_2
 WHERE type = 'TV Show' AND duration IS NOT NULL
 ORDER BY 4 DESC;
